@@ -2,7 +2,8 @@ Extension { #name : #MCGitBasedNetworkRepository }
 
 { #category : #'*ThreadedFFIMigration' }
 MCGitBasedNetworkRepository >> createIcebergRepositoryWithFallbackFor: remote url: remoteUrl [
-	| urlToUse |
+	| urlToUse credentialsRetry |
+	credentialsRetry := true.
 	urlToUse := remoteUrl.
 	[ [ ^ self createIcebergRepositoryFor: urlToUse ]
 		on: IceAuthenticationError
@@ -21,9 +22,15 @@ MCGitBasedNetworkRepository >> createIcebergRepositoryWithFallbackFor: remote ur
 			znUrl scheme = #https ifFalse: [ e pass ].
 			host := znUrl host.
 			credentials := IceCredentialStore current plaintextCredentialForHostname: host.
-			credentials username ifNotEmpty: [ e pass ].
+			credentials username ifNotEmpty: [ 
+				credentialsRetry ifTrue: 
+					[ credentialsRetry := false.
+					e retry ]
+				ifFalse:
+					[ e pass ] ].
 			(IceTipInteractiveCredentialsProvider new 
 					remote: (IceGitRemote url: urlToUse))
 						obtainPlaintextCredentials: credentials.
+			self crTrace: 'Retry with credentials'.
 			e retry ]
 ]
