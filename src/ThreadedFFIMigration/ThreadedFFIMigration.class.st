@@ -130,6 +130,13 @@ ThreadedFFIMigration class >> getThreadedFFIAvailable [
 	^result > 16r10000
 ]
 
+{ #category : #printing }
+ThreadedFFIMigration class >> gtTFFIversionString [
+	"Answer the threaded ffi library version as a base 16 string"
+
+	^'ThreadedFFI version: ', (self primitiveGtTFFIversion printStringRadix: 16)
+]
+
 { #category : #'class initialization' }
 ThreadedFFIMigration class >> initialize [ 
 
