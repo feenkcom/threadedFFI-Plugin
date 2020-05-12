@@ -31,16 +31,16 @@ TFCallbackQueue class >> initialize [
 { #category : #'instance creation' }
 TFCallbackQueue class >> shutDown: inANewImageSession [
 
-	inANewImageSession ifFalse: [ ^ self ].
-	self uniqueInstance shutDown.
-	UniqueInstance := nil
+	(inANewImageSession and: [ ThreadedFFIMigration threadedFFIAvailable ]) ifTrue:
+		[ self uniqueInstance shutDown.
+		UniqueInstance := nil ].
 ]
 
 { #category : #'instance creation' }
 TFCallbackQueue class >> startUp: inANewImageSession [
 
-	inANewImageSession ifFalse: [ ^ self ].
-	self uniqueInstance startUp
+	(inANewImageSession and: [ ThreadedFFIMigration threadedFFIAvailable]) ifTrue:
+		[ self uniqueInstance startUp ]
 ]
 
 { #category : #'instance creation' }
