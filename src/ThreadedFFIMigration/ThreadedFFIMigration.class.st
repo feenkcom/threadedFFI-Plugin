@@ -114,20 +114,21 @@ ThreadedFFIMigration class >> enableThreadedFFI [
 ThreadedFFIMigration class >> getThreadedFFIAvailable [
 	"Determine whether threaded ffi is available and set the flag"
 
-	| result |
+	| result ba |
 
 	"Use a Gt specific version for now to ensure we have the Gt version 
 	of libPThreadedPlugin.so"
-	"result := [ 
+	result := [ 
 		ba := #[1 2 3].
 		ba pinInMemory.
 		PointerUtils oopForObject: ba.
 		ba unpinInMemory.
 		true ]
 			on: Error 
-			do: [ false ]."
-	result := self primitiveGtTFFIversion.
-	^result > 16r10000
+			do: [ false ].
+	^ result
+	"result := self primitiveGtTFFIversion.
+	^result > 16r10000"
 ]
 
 { #category : #printing }
