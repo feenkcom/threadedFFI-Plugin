@@ -14,7 +14,7 @@ BaselineOfThreadedFFI >> baseline: spec [
 
 		spec 
 			baseline: #ThreadedFFIMigration
-				with: [ spec repository: 'github://feenkcom/threadedFFI-Plugin' ].
+				with: [ spec repository: 'github://feenkcom/threadedFFI-Plugin:akg' ].
 
 		spec
 			package: 'ThreadedFFI' with: [ spec requires: #('ThreadedFFIMigration') ];
