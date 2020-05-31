@@ -10,12 +10,14 @@ jobs:
               variant:
                 - os: ubuntu-18.04
                   platform: linux
+                - os: macos-latest
+                  platform: mac
         env:
             CC: gcc
             CXX: g++
         steps:
             - name: Install dependencies
-              if: matrix.os == 'macos-latest'
+              if: matrix.variant.os == 'macos-latest'
               run: brew install gcc autoconf automake libtool
 
             - uses: actions/checkout@v1
