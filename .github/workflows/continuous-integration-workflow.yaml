@@ -1,3 +1,6 @@
+#
+# Forced update: random make crash on Mac
+#
 name: Continuous integration
 on: [push, pull_request]
 
