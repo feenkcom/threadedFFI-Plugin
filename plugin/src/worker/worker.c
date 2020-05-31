@@ -157,12 +157,16 @@ void *worker_run(void *aWorker) {
 
 void executeWorkerTask(Worker *worker, WorkerTask *task) {
     
+	printf("executeWorkerTask: returnHolder = %p\n", task->returnHolderAddress);
+
     ffi_call(
              task->cif,
              task->anExternalFunction,
              task->returnHolderAddress,
              task->parametersAddress);
     
+	printf("*task->returnHolderAddress = %d\n", *(int *) task->returnHolderAddress);
+
     interpreterProxy->signalSemaphoreWithIndex(task->semaphoreIndex);
     worker_task_release(task);
 }
