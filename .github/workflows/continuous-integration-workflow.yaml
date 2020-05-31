@@ -7,7 +7,11 @@ jobs:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ubuntu-18.04, macos-latest]
+              variant:
+                - os: ubuntu-18.04
+                  platform: linux
+                - os: macos-latest
+                  platform: mac
         env:
             CC: gcc
             CXX: g++
