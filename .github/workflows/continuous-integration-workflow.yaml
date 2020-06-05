@@ -130,6 +130,7 @@ jobs:
               run: |
                 cd build/packages
                 zip ${GITHUB_WORKSPACE}/libPThreaded-win64.zip *.zip *.sha1
+              shell: pwsh.exe -File .\scripts\runScriptInCygwinBash.ps1 {0}
 
             - name: Run tests
               continue-on-error: true
