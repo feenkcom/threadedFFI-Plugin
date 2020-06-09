@@ -2,18 +2,14 @@ Class {
 	#name : #TFRunner,
 	#superclass : #FFIExternalReference,
 	#instVars : [
+		'callbackInvocationStack',
+		'stackProtect',
 		'exceptionHandler',
 		'semaphorePool',
 		'callbackReturnSemaphore'
 	],
 	#category : #'ThreadedFFI-Worker'
 }
-
-{ #category : #accessing }
-TFRunner >> callbackStackSize [
-
-	^self primitiveCallbackStackSize
-]
 
 { #category : #errors }
 TFRunner >> cannotReturnCallbackFromOldSession: aCallbackInvocation [
@@ -28,13 +24,15 @@ TFRunner >> cannotReturnCallbackInWrongOrder: aCallbackInvocation [
 
 	^ TFIncorrectOrderCallbackReturn new
 		callbackInvocation: aCallbackInvocation;
-		previousCallbacks: #();
+		previousCallbacks: (callbackInvocationStack copyUpTo: aCallbackInvocation);
 		signal
 ]
 
 { #category : #executing }
 TFRunner >> doInitialize [
 
+	callbackInvocationStack := Stack new.
+	stackProtect := Semaphore forMutualExclusion.
 	semaphorePool := self newSemaphorePool
 ]
 
@@ -113,14 +111,6 @@ TFRunner >> newSemaphorePool [
 ]
 
 { #category : #private }
-TFRunner >> primitiveCallbackStackSize [
-	"Answer the callbackStack size"
-
-	<primitive: 'primitiveCallbackStackSize' module: 'PThreadedPlugin' error: ec>
-	self primitiveFailed: ec
-]
-
-{ #category : #private }
 TFRunner >> primitivePerformWorkerCall: aTFExternalFunction
 		withArguments: argumentHolder
 		withReturnHolder: aReturnHolder
@@ -133,7 +123,10 @@ TFRunner >> primitivePerformWorkerCall: aTFExternalFunction
 TFRunner >> release [ 
 	
 	handle beNull.
-
+	"If the stack is not initialized it means this worker was never used for callbacks"
+	stackProtect ifNil: [ ^ self ].
+	stackProtect critical: [
+		callbackInvocationStack := nil ]
 ]
 
 { #category : #executing }

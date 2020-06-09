@@ -26,7 +26,7 @@ TFCalloutAPI class >> isTracing [
 	^ TraceBlock notNil
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #'instance creation' }
 TFCalloutAPI class >> newCallbackBackendFor: aCallback [
 
 	^ (TFCallback
