@@ -10,7 +10,7 @@ BaselineOfThreadedFFI >> baseline: spec [
 	spec for: #'common' do: [
 		spec postLoadDoIt: #'reset'.
 		spec baseline: #ThreadedFFIMigration with: [
-				spec repository: 'github://feenkcom/threadedFFI-Plugin:v0.6.6' ].
+				spec repository: 'github://feenkcom/threadedFFI-Plugin:v0.6.7' ].
 		spec 
 			package: 'ThreadedFFI' with: [
 				spec requires: #('ThreadedFFIMigration' ). ];
