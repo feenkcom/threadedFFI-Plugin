@@ -4,16 +4,20 @@ on: [push, pull_request]
 jobs:
     build-unixes:
         name: Build Unixes
-        runs-on: ${{ matrix.os }}
+        runs-on: ${{ matrix.variant.os }}
         strategy:
             matrix:
-                os: [ubuntu-18.04, macos-latest]
+              variant:
+                - os: ubuntu-18.04
+                  platform: linux
+                - os: macos-latest
+                  platform: mac
         env:
             CC: gcc
             CXX: g++
         steps:
             - name: Install dependencies
-              if: matrix.os == 'macos-latest'
+              if: matrix.variant.os == 'macos-latest'
               run: brew install gcc autoconf automake libtool
 
             - uses: actions/checkout@v1
@@ -31,11 +35,17 @@ jobs:
                 make package
                 mkdir -p artifacts
                 cp -f build/packages/*.zip build/packages/*.sha1 artifacts
+
             - name: Upload artifacts
               uses: actions/upload-artifact@v1
               with:
                   name: build-artifacts
                   path: artifacts
+
+            - name: Archive for release
+              run: |
+                cd build/packages
+                zip ${GITHUB_WORKSPACE}/libPThreaded-${{ matrix.variant.platform }}.zip *.zip *.sha1
 
             - name: Run tests
               continue-on-error: true
@@ -49,6 +59,31 @@ jobs:
               with:
                   name: test-results
                   path: test-results
+
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
+                release_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
+                body: |
+                  libPThreaded library for Pharo VM
+                draft: false
+                prerelease: true
+
+            - name: Upload Release Asset
+              id: upload-release-asset 
+              uses: actions/upload-release-asset@v1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                upload_url: ${{ steps.create_release.outputs.upload_url }}
+                asset_path: ./libPThreaded-${{ matrix.variant.platform }}.zip
+                asset_name: libPThreaded-${{ matrix.variant.platform }}.zip
+                asset_content_type: application/zip
+
 
     build-windows-cygwin:
         name: Build Windows Cygwin
@@ -91,6 +126,12 @@ jobs:
                   name: build-artifacts
                   path: artifacts
 
+            - name: Archive for release
+              run: |
+                cd build/packages
+                zip ${GITHUB_WORKSPACE}/libPThreaded-win64.zip *.zip *.sha1
+              shell: pwsh.exe -File .\scripts\runScriptInCygwinBash.ps1 {0}
+
             - name: Run tests
               continue-on-error: true
               run: |
@@ -105,3 +146,28 @@ jobs:
               with:
                   name: test-results
                   path: test-results
+
+            - name: Create Release
+              id: create_release
+              uses: actions/create-release@v1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: libPThreaded-win64-${{ github.sha }}
+                release_name: libPThreaded-win64-${{ github.sha }}
+                body: |
+                  libPThreaded library for Pharo VM
+                draft: false
+                prerelease: true
+
+            - name: Upload Release Asset
+              id: upload-release-asset 
+              uses: actions/upload-release-asset@v1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                upload_url: ${{ steps.create_release.outputs.upload_url }}
+                asset_path: ./libPThreaded-win64.zip
+                asset_name: libPThreaded-win64.zip
+                asset_content_type: application/zip
+

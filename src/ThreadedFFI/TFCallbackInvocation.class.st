@@ -60,16 +60,22 @@ TFCallbackInvocation >> execute [
 
 { #category : #private }
 TFCallbackInvocation >> primCallbackReturn [
+	"It returns true if the callback can return, and false if the order is not correct and should
+ 	retry later"
 	<primitive: 'primitiveCallbackReturn' module: 'PThreadedPlugin' error: ec>
-
+	
 	^ self primitiveFailed: ec
 ]
 
 { #category : #operations }
 TFCallbackInvocation >> returnExecution [
 
-	self primCallbackReturn.
-	handle beNull
+	"It returns true if the callback can return, and false if the order is not correct and should retry later"
+
+	^ self primCallbackReturn
+		ifTrue: [ handle beNull. true ]
+		ifFalse: [ false ]
+
 ]
 
 { #category : #accessing }

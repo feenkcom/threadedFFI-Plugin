@@ -8,7 +8,8 @@ Class {
 		'runner',
 		'parameterTypes',
 		'returnType',
-		'frontendCallback'
+		'frontendCallback',
+		'runStrategy'
 	],
 	#category : #'ThreadedFFI-Callbacks'
 }
@@ -93,12 +94,19 @@ TFCallback >> register [
 	
 	self validateTypes.
 	self runner ensureInitialized.
-	self registerCallback.
+	self registerCallback: frontendCallback tfPrintString.
 	TFCallbackQueue uniqueInstance registerCallback: self.
 ]
 
 { #category : #registering }
 TFCallback >> registerCallback [
+	"TODO: This is still here to allow updating. We need to remove it soon!"
+	<primitive: 'primitiveRegisterCallback' module: 'PThreadedPlugin'>
+	^ self primitiveFailed 
+]
+
+{ #category : #registering }
+TFCallback >> registerCallback: debugString [
 
 	<primitive: 'primitiveRegisterCallback' module: 'PThreadedPlugin'>
 	^ self primitiveFailed 
@@ -119,6 +127,16 @@ TFCallback >> returnType [
 { #category : #accessing }
 TFCallback >> returnType: anObject [
 	returnType := anObject
+]
+
+{ #category : #accessing }
+TFCallback >> runStrategy [
+	^ runStrategy ifNil: [ TFCallbackForkRunStrategy new ]
+]
+
+{ #category : #accessing }
+TFCallback >> runStrategy: anObject [
+	runStrategy := anObject
 ]
 
 { #category : #accessing }

@@ -1,7 +1,7 @@
 #include "setjmp.h"
 #include "PThreadedPlugin.h"
 
-#include "vmCallback.h"
+#include "pharovm/vmCallback.h"
 
 /*
  * Define sigsetjmp and siglongjmp to be the most minimal setjmp/longjmp available on the platform.
@@ -25,10 +25,12 @@
 
 void sameThreadCallbackEnter(struct _Runner* runner, struct _CallbackInvocation* callback);
 void sameThreadCallbackExit(struct _Runner* runner, struct _CallbackInvocation* callback);
+void sameThreadPrepareCallback(struct _Runner* runner, struct _CallbackInvocation* callback);
 
 static Runner sameThreadRunner = {
 	sameThreadCallbackEnter,
 	sameThreadCallbackExit,
+	sameThreadPrepareCallback,
     NULL
 };
 
@@ -143,4 +145,8 @@ void sameThreadCallbackExit(struct _Runner* runner, struct _CallbackInvocation* 
 	vmcc = (VMCallbackContext*)callback->payload;
 
 	interpreterProxy->ptExitInterpreterToCallback(vmcc);
+}
+
+void sameThreadPrepareCallback(struct _Runner* runner, struct _CallbackInvocation* callback){
+	// I do not do nothing
 }

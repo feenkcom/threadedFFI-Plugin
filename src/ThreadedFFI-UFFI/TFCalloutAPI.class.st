@@ -26,14 +26,16 @@ TFCalloutAPI class >> isTracing [
 	^ TraceBlock notNil
 ]
 
-{ #category : #'as yet unclassified' }
+{ #category : #'instance creation' }
 TFCalloutAPI class >> newCallbackBackendFor: aCallback [
 
-	^ TFCallback
+	^ (TFCallback
 		forCallback: aCallback
 		parameters: (aCallback arguments collect: #tfExternalTypeWithArity) asArray
 		returnType: aCallback returnType tfExternalTypeWithArity
-		runner: aCallback ffiLibrary uniqueInstance runner
+		runner: aCallback ffiLibrary runner)
+			runStrategy: aCallback ffiLibrary callbackRunningStrategy;
+			yourself
 ]
 
 { #category : #tracing }

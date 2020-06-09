@@ -2,18 +2,14 @@ Class {
 	#name : #TFRunner,
 	#superclass : #FFIExternalReference,
 	#instVars : [
+		'callbackInvocationStack',
+		'stackProtect',
 		'exceptionHandler',
 		'semaphorePool',
 		'callbackReturnSemaphore'
 	],
 	#category : #'ThreadedFFI-Worker'
 }
-
-{ #category : #accessing }
-TFRunner >> callbackStackSize [
-
-	^self primitiveCallbackStackSize
-]
 
 { #category : #errors }
 TFRunner >> cannotReturnCallbackFromOldSession: aCallbackInvocation [
@@ -28,13 +24,15 @@ TFRunner >> cannotReturnCallbackInWrongOrder: aCallbackInvocation [
 
 	^ TFIncorrectOrderCallbackReturn new
 		callbackInvocation: aCallbackInvocation;
-		previousCallbacks: #();
+		previousCallbacks: (callbackInvocationStack copyUpTo: aCallbackInvocation);
 		signal
 ]
 
 { #category : #executing }
 TFRunner >> doInitialize [
 
+	callbackInvocationStack := Stack new.
+	stackProtect := Semaphore forMutualExclusion.
 	semaphorePool := self newSemaphorePool
 ]
 
@@ -67,8 +65,9 @@ TFRunner >> executeCallback: aCallbackInvocation [
 	To guarantee the stack is not modified while this method runs, this method should be called from a high priority process.
 	  => no callbacks should finish while this method runs."
 
-	[ self handleExceptionDuring: [ aCallbackInvocation execute ] ]
-		fork"At: Processor userSchedulingPriority"
+	stackProtect critical: [ callbackInvocationStack push: aCallbackInvocation ].
+	aCallbackInvocation callback runStrategy executeCallback: aCallbackInvocation on: self.
+
 ]
 
 { #category : #executing }
@@ -112,14 +111,6 @@ TFRunner >> newSemaphorePool [
 ]
 
 { #category : #private }
-TFRunner >> primitiveCallbackStackSize [
-	"Answer the callbackStack size"
-
-	<primitive: 'primitiveCallbackStackSize' module: 'PThreadedPlugin' error: ec>
-	self primitiveFailed: ec
-]
-
-{ #category : #private }
 TFRunner >> primitivePerformWorkerCall: aTFExternalFunction
 		withArguments: argumentHolder
 		withReturnHolder: aReturnHolder
@@ -132,7 +123,10 @@ TFRunner >> primitivePerformWorkerCall: aTFExternalFunction
 TFRunner >> release [ 
 	
 	handle beNull.
-
+	"If the stack is not initialized it means this worker was never used for callbacks"
+	stackProtect ifNil: [ ^ self ].
+	stackProtect critical: [
+		callbackInvocationStack := nil ]
 ]
 
 { #category : #executing }
@@ -146,26 +140,26 @@ TFRunner >> returnCallback: aCallbackInvocation [
 	callbackReturnSemaphore ifNil: [ 
 		callbackReturnSemaphore := Semaphore new ].
 
-	[ aCallbackInvocation returnExecution ]
-		on: PrimitiveFailed
-		do: [ :ex |
-			ex selector isPrimitiveError ifFalse: 
-				[ ex pass ]
-			ifTrue: [ | errorCode |
-				errorCode := ex selector errorCode.
-				errorCode = -1 ifTrue: 
-					[ ^ self cannotReturnCallbackFromOldSession: aCallbackInvocation ]
-				ifFalse: [ errorCode = -2 ifTrue: [ 
-						"Out of order,  wait for our turn"
-						callbackReturnSemaphore wait.
-						self returnCallback: aCallbackInvocation
-						 ]
-				ifFalse:
-					[ ex pass ] ] ] ].
+	aCallbackInvocation isNull 
+		ifTrue: [ ^ self ].
 
-	"Allow any waiting returns to run"
-	[ callbackReturnSemaphore signalAll ] valueUnpreemptively.
+	callbackInvocationStack isEmptyOrNil ifTrue: [ 
+		^ self cannotReturnCallbackFromOldSession: aCallbackInvocation].
 
+	stackProtect critical: [
+		(callbackInvocationStack top == aCallbackInvocation) 
+			ifTrue: [
+				aCallbackInvocation returnExecution
+					ifTrue: [
+						"If we are starting a session and an execution was executed, it 
+						 may happen that the stack is empty."
+						callbackInvocationStack ifEmpty: [ ^ self ].
+						callbackInvocationStack pop.
+						[ callbackReturnSemaphore signalAll ] valueUnpreemptively.
+						^ self ]] ].
+	"failed"
+	callbackReturnSemaphore wait.
+	self returnCallback: aCallbackInvocation
 ]
 
 { #category : #accessing }

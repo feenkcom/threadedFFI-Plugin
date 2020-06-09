@@ -17,11 +17,13 @@ typedef void (*CALLBACK_FUNCTION)(Runner* runner, CallbackInvocation* callback);
 struct _Runner {
 	CALLBACK_FUNCTION callbackEnterFunction;
 	CALLBACK_FUNCTION callbackExitFunction;
+	CALLBACK_FUNCTION callbackPrepareInvocation;
     CallbackInvocation *callbackStack;
 };
 
 struct _Callback {
     Runner* runner;
+    void* userData; // This pointer is useful to store debug information
     ffi_closure *closure;
     ffi_cif cif;
     void *functionAddress;
@@ -33,6 +35,9 @@ struct _CallbackInvocation {
     void *returnHolder;
     void **arguments;
     //Optional payload used by the runners
+    // In the same Thread strategy here we store the state of the interpreter to perform the sig long jump
+    // In the worker it puts a semaphore to signal if the call is from another thread that is not the worker.
+    // If it is the same it is NULL
     void *payload;
     void *previous;
 };
