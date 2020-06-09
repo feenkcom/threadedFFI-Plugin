@@ -66,8 +66,8 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                tag_name: libPThreaded-${{ matrix.variant.platform }}
-                release_name: libPThreaded-${{ matrix.variant.platform }}
+                tag_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
+                release_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
                 body: |
                   libPThreaded library for Pharo VM
                 draft: false
@@ -153,8 +153,8 @@ jobs:
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
-                tag_name: libPThreaded-win64
-                release_name: libPThreaded-win64
+                tag_name: libPThreaded-win64-${{ github.sha }}
+                release_name: libPThreaded-win64-${{ github.sha }}
                 body: |
                   libPThreaded library for Pharo VM
                 draft: false
@@ -171,4 +171,3 @@ jobs:
                 asset_name: libPThreaded-win64.zip
                 asset_content_type: application/zip
 
-# Force run
