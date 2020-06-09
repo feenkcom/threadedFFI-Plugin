@@ -24,6 +24,8 @@ static void callbackFrontend(ffi_cif *cif, void *ret, void* args[], void* cbPtr)
     invocation.previous = callback->runner->callbackStack;
     callback->runner->callbackStack = &invocation;
     
+    callback->runner->callbackPrepareInvocation(callback->runner, &invocation);
+
     queue_add_pending_callback(&invocation);
 	
 	// Manage callouts while waiting this callback to return
@@ -69,6 +71,11 @@ Callback *callback_new(Runner* runner, ffi_type** parameters, sqInt count, ffi_t
 void callback_release(Callback *callback){
 	ffi_closure_free(callback->closure);
 	free(callback->parameterTypes);
+
+	if(callback->userData){
+		free(callback->userData);
+	}
+
 	free(callback);
 }
 

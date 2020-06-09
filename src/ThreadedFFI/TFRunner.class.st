@@ -67,8 +67,9 @@ TFRunner >> executeCallback: aCallbackInvocation [
 	To guarantee the stack is not modified while this method runs, this method should be called from a high priority process.
 	  => no callbacks should finish while this method runs."
 
-	[ self handleExceptionDuring: [ aCallbackInvocation execute ] ]
-		fork"At: Processor userSchedulingPriority"
+	stackProtect critical: [ callbackInvocationStack push: aCallbackInvocation ].
+	aCallbackInvocation callback runStrategy executeCallback: aCallbackInvocation on: self.
+
 ]
 
 { #category : #executing }
@@ -146,26 +147,26 @@ TFRunner >> returnCallback: aCallbackInvocation [
 	callbackReturnSemaphore ifNil: [ 
 		callbackReturnSemaphore := Semaphore new ].
 
-	[ aCallbackInvocation returnExecution ]
-		on: PrimitiveFailed
-		do: [ :ex |
-			ex selector isPrimitiveError ifFalse: 
-				[ ex pass ]
-			ifTrue: [ | errorCode |
-				errorCode := ex selector errorCode.
-				errorCode = -1 ifTrue: 
-					[ ^ self cannotReturnCallbackFromOldSession: aCallbackInvocation ]
-				ifFalse: [ errorCode = -2 ifTrue: [ 
-						"Out of order,  wait for our turn"
-						callbackReturnSemaphore wait.
-						self returnCallback: aCallbackInvocation
-						 ]
-				ifFalse:
-					[ ex pass ] ] ] ].
+	aCallbackInvocation isNull 
+		ifTrue: [ ^ self ].
 
-	"Allow any waiting returns to run"
-	[ callbackReturnSemaphore signalAll ] valueUnpreemptively.
+	callbackInvocationStack isEmptyOrNil ifTrue: [ 
+		^ self cannotReturnCallbackFromOldSession: aCallbackInvocation].
 
+	stackProtect critical: [
+		(callbackInvocationStack top == aCallbackInvocation) 
+			ifTrue: [
+				aCallbackInvocation returnExecution
+					ifTrue: [
+						"If we are starting a session and an execution was executed, it 
+						 may happen that the stack is empty."
+						callbackInvocationStack ifEmpty: [ ^ self ].
+						callbackInvocationStack pop.
+						[ callbackReturnSemaphore signalAll ] valueUnpreemptively.
+						^ self ]] ].
+	"failed"
+	callbackReturnSemaphore wait.
+	self returnCallback: aCallbackInvocation
 ]
 
 { #category : #accessing }

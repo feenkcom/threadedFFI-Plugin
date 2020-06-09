@@ -59,9 +59,10 @@ PrimitiveWithDepth(primitiveUnregisterCallback, 1){
 /*
  * This primitive register a callback in libFFI.
  * This primitive generates the pointer to the function to be passed as the callback.
- * To do so, it generates all the structures expected by lib ffi.
+ * To do so, it generates all the structures expected by libFfi.
  *
- * It only uses the receiver.
+ * It uses two objects, the receiver and a optional parameter ByteString object.
+ *
  * The receiver is a TFCallback.
  *
  * It should at least have the following instance variables
@@ -71,8 +72,10 @@ PrimitiveWithDepth(primitiveUnregisterCallback, 1){
  * 2: parameterHandlers
  * 3: returnTypeHandler
  * 4: runner
+ *
+ * The parameter is a ByteString that will be stored in the internal callback structure as a way of debugging.
+ * The parameter can be nil.
  */
-
 PrimitiveWithDepth(primitiveRegisterCallback, 3){
     sqInt callbackHandle;
     Callback *callback;
@@ -84,9 +87,18 @@ PrimitiveWithDepth(primitiveRegisterCallback, 3){
     ffi_type **parameters;
     sqInt receiver;
     ffi_type *returnType;
+    sqInt debugString;
 
     receiver = getReceiver();
     checkFailed();
+
+    //As the parameter is optional, the primitive invocation can came without it
+    if(interpreterProxy->methodArgumentCount() == 1){
+    	debugString = interpreterProxy->stackObjectValue(0);
+    	checkFailed();
+    }else{
+    	debugString = interpreterProxy->nilObject();
+    }
 
     callbackHandle = getAttributeOf(receiver, 1);
     checkFailed();
@@ -124,6 +136,13 @@ PrimitiveWithDepth(primitiveRegisterCallback, 3){
     callback = callback_new(runner, parameters, count, returnType);
     checkFailed();
 
+    if(debugString == interpreterProxy->nilObject()){
+    	callback->userData = NULL;
+    }else{
+    	callback->userData = malloc(strlen(readString(debugString)) + 1);
+    	strcpy(callback->userData, readString(debugString));
+    }
+
     setHandler(receiver, callback->functionAddress);
     checkFailed();
 
@@ -143,6 +162,8 @@ PrimitiveWithDepth(primitiveRegisterCallback, 3){
  *   - If the callback return is out of order: OS Error -2 will be returned
  *
  *   receiver <TFCallbackInvocation>
+ *   It returns true if the callback can return, and false if the order is not correct and should
+ *   retry later.
  */
 PrimitiveWithDepth(primitiveCallbackReturn, 2) {
     CallbackInvocation *callbackInvocation;
@@ -178,18 +199,17 @@ PrimitiveWithDepth(primitiveCallbackReturn, 2) {
     // If the returning callback is not the last callback that entered, we cannot return
     // Otherwise this would produce a stack corruption (returning to an older callback erasing/overriding the stack of newer ones)
     if (callbackInvocation != runner->callbackStack){
-		if (runner->callbackStack == NULL)
-        	interpreterProxy->primitiveFailForOSError(-1);
-		else
-        	interpreterProxy->primitiveFailForOSError(-2);
+    	primitiveEndReturn(interpreterProxy->falseObject());
         return;
     }
+
+    //We have to do this here. Because the callbackExitFunction may not return
+    //If we are in the samethread runner it does not return, as it uses a sig_longjmp to return to the caller of the callback!
+    primitiveEndReturn(interpreterProxy->trueObject());
     
     // If the callback was the last one, we need to pop it from the callback stack
     runner->callbackStack = runner->callbackStack->previous;
     runner->callbackExitFunction(runner, callbackInvocation);
-
-    primitiveEnd();
 }
 
 
