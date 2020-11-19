@@ -94,7 +94,7 @@ ThreadedFFIMigration class >> disableThreadedFFI [
 
 	"Re-enable Iceberg's interactive credentials provider.
 	See comments in #enableThreadedFFI"
-	IceCredentialsProvider providerType: IceTipInteractiveCredentialsProvider.
+	IceCredentialsProvider providerType: nil.
 ]
 
 { #category : #managing }
