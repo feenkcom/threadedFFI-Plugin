@@ -28,9 +28,8 @@ MCGitBasedNetworkRepository >> createIcebergRepositoryWithFallbackFor: remote ur
 					e retry ]
 				ifFalse:
 					[ e pass ] ].
-			(IceTipInteractiveCredentialsProvider new 
-					remote: (IceGitRemote url: urlToUse))
-						obtainPlaintextCredentials: credentials.
+			(IceCredentialsProvider defaultForRemote: (IceGitRemote url: urlToUse))
+					obtainPlaintextCredentials: credentials.
 			self crTrace: 'Retry with credentials'.
 			e retry ]
 ]
