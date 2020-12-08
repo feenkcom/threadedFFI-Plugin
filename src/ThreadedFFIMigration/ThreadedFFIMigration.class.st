@@ -107,7 +107,7 @@ ThreadedFFIMigration class >> enableThreadedFFI [
 	"Because threaded FFI runs callbacks in a separate thread (vs. Alien, which runs callbacks in the calling thread), it isn't possible to prompt for information in a callback.
 	Disable Icebergs interactive credentials provider.
 	MCGitBasedNetworkRepository>>createIcebergRepositoryWithFallbackFor:url: has been modified to check for invalid credentials, prompt the user, and retry."
-	IceCredentialsProvider providerType: IceCredentialsProvider threadedFFIProvider.
+	IceCredentialsProvider providerType: IceNonInteractiveCredentialsProvider.
 ]
 
 { #category : #private }
