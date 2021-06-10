@@ -15,11 +15,22 @@ jobs:
         env:
             CC: gcc
             CXX: g++
+            MACOSX_DEPLOYMENT_TARGET: "10.9"
         steps:
             - name: Install dependencies
               if: matrix.variant.os == 'macos-latest'
               run: brew install gcc autoconf automake libtool
-
+            - name: Set Up macOS
+              if: runner.os == 'macOS'
+              run: echo "GT_BUILD_SYSROOT=$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk" >> $GITHUB_ENV
+            - name: Install macOS SDK
+              if: runner.os == 'macOS'
+              run: |
+                curl -L -O https://github.com/phracker/MacOSX-SDKs/releases/download/10.15/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk.tar.xz
+                tar -xf MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk.tar.xz -C "$(dirname "$GT_BUILD_SYSROOT")"
+                # set minimum sdk version to our target
+                plutil -replace MinimumSDKVersion -string ${MACOSX_DEPLOYMENT_TARGET} $(xcode-select -p)/Platforms/MacOSX.platform/Info.plist
+                plutil -replace DTSDKName -string macosx${MACOSX_DEPLOYMENT_TARGET}internal $(xcode-select -p)/Platforms/MacOSX.platform/Info.plist
             - uses: actions/checkout@v1
 
             - name: CMake configuration
