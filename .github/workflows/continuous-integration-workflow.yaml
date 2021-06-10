@@ -73,27 +73,15 @@ jobs:
 
             - name: Create Release
               id: create_release
-              uses: actions/create-release@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: ncipollo/release-action@v1
               with:
-                tag_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
-                release_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
-                body: |
-                  libPThreaded library for Pharo VM
+                allowUpdates: true
                 draft: false
                 prerelease: true
-
-            - name: Upload Release Asset
-              id: upload-release-asset 
-              uses: actions/upload-release-asset@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                upload_url: ${{ steps.create_release.outputs.upload_url }}
-                asset_path: ./libPThreaded-${{ matrix.variant.platform }}.zip
-                asset_name: libPThreaded-${{ matrix.variant.platform }}.zip
-                asset_content_type: application/zip
+                token: ${{ secrets.GITHUB_TOKEN }}
+                artifacts: './libPThreaded-${{ matrix.variant.platform }}.zip'
+                tag: libPThreaded-${{ matrix.variant.platform }}
+                name: libPThreaded-${{ matrix.variant.platform }}
 
 
     build-windows-cygwin:
@@ -157,28 +145,16 @@ jobs:
               with:
                   name: test-results
                   path: test-results
-
+                
             - name: Create Release
               id: create_release
-              uses: actions/create-release@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: ncipollo/release-action@v1
               with:
-                tag_name: libPThreaded-win64-${{ github.sha }}
-                release_name: libPThreaded-win64-${{ github.sha }}
-                body: |
-                  libPThreaded library for Pharo VM
+                allowUpdates: true
                 draft: false
                 prerelease: true
-
-            - name: Upload Release Asset
-              id: upload-release-asset 
-              uses: actions/upload-release-asset@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                upload_url: ${{ steps.create_release.outputs.upload_url }}
-                asset_path: ./libPThreaded-win64.zip
-                asset_name: libPThreaded-win64.zip
-                asset_content_type: application/zip
+                token: ${{ secrets.GITHUB_TOKEN }}
+                artifacts: './libPThreaded-win64.zip'
+                tag: libPThreaded-win64
+                name: libPThreaded-win64
 
