@@ -15,11 +15,22 @@ jobs:
         env:
             CC: gcc
             CXX: g++
+            MACOSX_DEPLOYMENT_TARGET: "10.9"
         steps:
             - name: Install dependencies
               if: matrix.variant.os == 'macos-latest'
               run: brew install gcc autoconf automake libtool
-
+            - name: Set Up macOS
+              if: runner.os == 'macOS'
+              run: echo "GT_BUILD_SYSROOT=$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk" >> $GITHUB_ENV
+            - name: Install macOS SDK
+              if: runner.os == 'macOS'
+              run: |
+                curl -L -O https://github.com/phracker/MacOSX-SDKs/releases/download/10.15/MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk.tar.xz
+                tar -xf MacOSX${MACOSX_DEPLOYMENT_TARGET}.sdk.tar.xz -C "$(dirname "$GT_BUILD_SYSROOT")"
+                # set minimum sdk version to our target
+                plutil -replace MinimumSDKVersion -string ${MACOSX_DEPLOYMENT_TARGET} $(xcode-select -p)/Platforms/MacOSX.platform/Info.plist
+                plutil -replace DTSDKName -string macosx${MACOSX_DEPLOYMENT_TARGET}internal $(xcode-select -p)/Platforms/MacOSX.platform/Info.plist
             - uses: actions/checkout@v1
 
             - name: CMake configuration
@@ -62,27 +73,15 @@ jobs:
 
             - name: Create Release
               id: create_release
-              uses: actions/create-release@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: ncipollo/release-action@v1
               with:
-                tag_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
-                release_name: libPThreaded-${{ matrix.variant.platform }}-${{ github.sha }}
-                body: |
-                  libPThreaded library for Pharo VM
+                allowUpdates: true
                 draft: false
                 prerelease: true
-
-            - name: Upload Release Asset
-              id: upload-release-asset 
-              uses: actions/upload-release-asset@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                upload_url: ${{ steps.create_release.outputs.upload_url }}
-                asset_path: ./libPThreaded-${{ matrix.variant.platform }}.zip
-                asset_name: libPThreaded-${{ matrix.variant.platform }}.zip
-                asset_content_type: application/zip
+                token: ${{ secrets.GITHUB_TOKEN }}
+                artifacts: './libPThreaded-${{ matrix.variant.platform }}.zip'
+                tag: libPThreaded-${{ matrix.variant.platform }}
+                name: libPThreaded-${{ matrix.variant.platform }}
 
 
     build-windows-cygwin:
@@ -146,28 +145,16 @@ jobs:
               with:
                   name: test-results
                   path: test-results
-
+                
             - name: Create Release
               id: create_release
-              uses: actions/create-release@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              uses: ncipollo/release-action@v1
               with:
-                tag_name: libPThreaded-win64-${{ github.sha }}
-                release_name: libPThreaded-win64-${{ github.sha }}
-                body: |
-                  libPThreaded library for Pharo VM
+                allowUpdates: true
                 draft: false
                 prerelease: true
-
-            - name: Upload Release Asset
-              id: upload-release-asset 
-              uses: actions/upload-release-asset@v1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                upload_url: ${{ steps.create_release.outputs.upload_url }}
-                asset_path: ./libPThreaded-win64.zip
-                asset_name: libPThreaded-win64.zip
-                asset_content_type: application/zip
+                token: ${{ secrets.GITHUB_TOKEN }}
+                artifacts: './libPThreaded-win64.zip'
+                tag: libPThreaded-win64
+                name: libPThreaded-win64
 
