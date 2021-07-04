@@ -9,11 +9,13 @@ LGitLibrary >> calloutAPIClass [
 
 { #category : #'*ThreadedFFIMigration' }
 LGitLibrary >> runner [ 
-
-	^ ThreadedFFIMigration threadedFFIAvailable
-		ifTrue: [ TFSameThreadRunner uniqueInstance ]
-		ifFalse: [ super runner ]
-
+	^ self class environment
+		at: #ThreadedFFIMigration
+		ifPresent: [ :aThreadedFFIMigration |
+			aThreadedFFIMigration threadedFFIAvailable
+				ifTrue: [ (self class environment at: #TFSameThreadRunner) uniqueInstance ]
+				ifFalse: [ super runner ] ]
+		ifAbsent: [ super runner ]
 ]
 
 { #category : #'*ThreadedFFIMigration' }
